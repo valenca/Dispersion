@@ -1,48 +1,69 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
+#include"tree.c"
 
-#define DIM 3
+#define DIM 2
 #define MAX 100000
+
 #define min(a,b) ((a)<(b))?(a):(b)
 
 double dist(int a,int b);
 int comp(double *a, double *b);
 double divc(int s,int f,int l);
+void calcK();
+void rec(node_ptr h);
 
-double points[MAX][2];
+void removePoint(int p);
+
+double points[MAX][DIM];
 double min_d=10000000;
-int N,D;
+int N,D,K,P;
 int P1,P2;
 
-int main(){
-	int i=0,j;
-	/*double m=10000000;*/
-	scanf("%d %d",&N,&D);
 
+int main(){
+  int i,j;
+	
+	scanf("%d %d %d",&N,&D,&P);
 	
 	for(i=0;i<N;i++)
 		for(j=0;j<D;j++)
 			scanf("%lf",&points[i][j]);
-
+	calcK();
 	qsort(points,N,sizeof(double[2]),(int(*)(const void*,const void*))comp);
 	
-	/*
-	for(i=0;i<N;i++){
-		for(j=i+1;j<N;j++){
-			if (dist(i,j)<m){
-				m=dist(i,j);
-				P1=i;
-				P2=j;
-			}
-		}
+	for(i=N-P;i>0;i--){
+		min_d=100000;
+		divc(0,N,0);	
+		removePoint(P1);
 	}
 	
-	printf("%f %d %d\n",m,P1,P2);
-	*/
-	divc(0,N,0);
+	for(i=0;i<N;i++){
+		printf("%f %f\n",points[i][0],points[i][1]);
+	}
+	min_d=1000000;
+	divc(0,P,0);
+	
 	printf("%f %d %d\n",min_d,P1,P2);
 	return 0;
+}
+
+void removePoint(int p){
+	int i,j;
+	for(i=p;i<N;i++)
+		for(j=0;j<DIM;j++)
+			points[i][j]=points[i+1][j];
+	N--;
+}
+
+void calcK(){
+	K=pow(3,DIM)-pow(3,DIM-1);
+	return;
+}
+
+void rec(node_ptr h){
+	
 }
 
 double divc(int s,int f,int l){
@@ -82,7 +103,7 @@ double divc(int s,int f,int l){
 		for(i=d-1;i>=s;i--){
 			k=0;
 			for(j=d;j<f;j++){
-				if(k==19 || points[j][0]-points[i][0]>=m) break;
+				if(k>K || points[j][0]-points[i][0]>=m) break;
 				if(abs(points[j][1]-points[i][1])>=m) continue;
 				else{
 					/*m=min(m,dist(i,j));*/

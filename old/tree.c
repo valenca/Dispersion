@@ -1,6 +1,5 @@
 #include<stdio.h>
 #include<stdlib.h>
-
 #define max(a,b) ((a)>(b))?(a):(b)
 
 typedef struct node * node_ptr;
@@ -18,9 +17,17 @@ void printTree(node_ptr tree,int l);
 void deleteTree(node_ptr tree);
 int compare(node_ptr a, node_ptr b);
 
+/*
 int main(){
-  int i;
+  int i,j;
   node_ptr v[30],head;
+	scanf("%d %d",&N,&D);
+	
+	for(i=0;i<N;i++)
+		for(j=0;j<D;j++)
+			scanf("%lf",&points[i][j]);
+
+
   head=createNode();
   head->x=15;
   for(i=0;i<30;i++){
@@ -29,9 +36,12 @@ int main(){
     insertNode(v[i],head);
   }
   printTree(head,0);
+	
+	
+	
   return 0;
 }
-
+*/
 
 void printTree(node_ptr tree,int l){
   int i;
