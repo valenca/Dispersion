@@ -5,8 +5,8 @@ def gen(n,k,d,l):
 	points = list()
 
 	print(n)
-	print(k)
 	print(d)
+	print(k)
 	r = abs(l[0])+abs(l[1])
 
 	for i in range(n):
