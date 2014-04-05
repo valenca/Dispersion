@@ -43,7 +43,7 @@ def closestPair(L):
 
 def kDispersePoints(vector,k):
     if k>=len(vector):
-        return (closestPair(vector)[0],vector)
+        return (closestPair(vector)[0],vector.copy())
     else:
         ip,iq=closestPair(vector)[2]
 
@@ -54,7 +54,6 @@ def kDispersePoints(vector,k):
         q=vector.pop(iq)
         bq=kDispersePoints(vector,k)
         vector.insert(iq,q)
-
 
         if bq[0]>bp[0]:
             return bq
