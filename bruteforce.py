@@ -1,4 +1,8 @@
-from scipy.spatial.distance import euclidean as dist
+def dist(p1,p2):
+	res = 0
+	for c1,c2 in zip(p1,p2):
+		res += (c1-c2)**2
+	return res**0.5
 
 def closestPair(L,dp):
 	try:
@@ -17,7 +21,7 @@ def closestPair(L,dp):
 
 def kDispersePoints(vector,k,dp):
 	if k>=len(vector):
-		return (closestPair(vector,dp)[0],vector.copy())
+		return (closestPair(vector,dp)[0],vector[:])
 	else:
 		ip,iq=closestPair(vector,dp)[2]
 
