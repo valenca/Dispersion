@@ -1,5 +1,11 @@
-from scipy.spatial.distance import euclidean as dist
-    
+#from scipy.spatial.distance import euclidean as dist
+import math
+
+def dist(a,b):
+    x=a[0]-b[0]
+    y=a[1]-b[1]
+    return math.sqrt((x*x)+(y*y))
+
 def closestPair(L):
     best = [dist(L[0],L[1]), (L[0],L[1]),(0,1)]
     dim = len(vector[0])
@@ -42,8 +48,9 @@ def closestPair(L):
     return best
 
 def kDispersePoints(vector,k):
-    if k>=len(vector):
-        return (closestPair(vector)[0],vector)
+    if k==len(vector):
+        return (closestPair(vector)[0],vector[:])
+        print (vector)
     else:
         ip,iq=closestPair(vector)[2]
 
@@ -54,8 +61,7 @@ def kDispersePoints(vector,k):
         q=vector.pop(iq)
         bq=kDispersePoints(vector,k)
         vector.insert(iq,q)
-
-
+        
         if bq[0]>bp[0]:
             return bq
         else :
@@ -70,7 +76,7 @@ if __name__ == '__main__':
         for i in range(N):
             a=[]
             for j in range(D):
-                a.append(float(input()))
+                a.append(int(float(input())))
             vector.append(a)
         return vector,k
             
