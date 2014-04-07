@@ -1,12 +1,6 @@
-#from scipy.spatial.distance import euclidean as dist
-import math
-
-def dist(a,b):
-    x=a[0]-b[0]
-    y=a[1]-b[1]
-    return math.sqrt((x*x)+(y*y))
-
-def closestPair(L):
+from scipy.spatial.distance import euclidean as dist
+    
+def closestPair(L,dp):
     best = [dist(L[0],L[1]), (L[0],L[1]),(0,1)]
     dim = len(vector[0])
     threshold = (3**dim)-(3**(dim-1))
@@ -44,24 +38,27 @@ def closestPair(L):
         return L
 	
     L.sort()
+    try:
+        return dp[tuple([tuple(i) for i in L])]
+    except KeyError:
+        pass
     recur(L,0)
+    dp[tuple([tuple(i) for i in L])]=best
     return best
 
-def kDispersePoints(vector,k):
-    if k==len(vector):
-        return (closestPair(vector)[0],vector[:])
-        print (vector)
+def kDispersePoints(vector,k,dp):
+    if k>=len(vector):
+        return (closestPair(vector,dp)[0],vector.copy())
     else:
-        ip,iq=closestPair(vector)[2]
+        ip,iq=closestPair(vector,dp)[2]
 
         p=vector.pop(ip)
-        bp=kDispersePoints(vector,k)
+        bp=kDispersePoints(vector,k,dp)
         vector.insert(ip,p)
 
         q=vector.pop(iq)
-        bq=kDispersePoints(vector,k)
+        bq=kDispersePoints(vector,k,dp)
         vector.insert(iq,q)
-        
         if bq[0]>bp[0]:
             return bq
         else :
@@ -82,4 +79,4 @@ if __name__ == '__main__':
             
     vector,k=readVector()
     vector.sort()
-    print(kDispersePoints(vector,k))
+    print(kDispersePoints(vector,k,dict()))
