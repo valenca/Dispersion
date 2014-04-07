@@ -1,5 +1,11 @@
-from scipy.spatial.distance import euclidean as dist
-    
+from pprint import pprint
+
+def dist(p1,p2):
+	res = 0
+	for c1,c2 in zip(p1,p2):
+		res += (c1-c2)**2
+	return res**0.5
+
 def closestPair(L,dp):
     best = [dist(L[0],L[1]), (L[0],L[1]),(0,1)]
     dim = len(vector[0])
@@ -28,16 +34,17 @@ def closestPair(L,dp):
             return L
         split = int(len(L)/2)
         splitx = L[split][0]
-        L = list(merge(recur(L[:split],ind), recur(L[split:],ind+split)))
+        L2 = list(merge(recur(L[:split],ind), recur(L[split:],ind+split)))
 
-        E = [p for p in L if abs(p[0]-splitx) < best[0]]
+        E = [p for p in L2 if abs(p[0]-splitx) < best[0]]
         for i in range(len(E)):
-            for j in range(1,threshold):
+            for j in range(1,len(E)):
                 if i+j < len(E):
-                    testPair(E[i],E[i+j],ind+i,ind+i+j)
+                    testPair(E[i],E[i+j],ind+L.index(E[i]),ind+L.index(E[i+j]))
+
         return L
 	
-    L.sort()
+	L.sort()
     try:
         return dp[tuple([tuple(i) for i in L])]
     except KeyError:
@@ -48,7 +55,7 @@ def closestPair(L,dp):
 
 def kDispersePoints(vector,k,dp):
     if k>=len(vector):
-        return (closestPair(vector,dp)[0],vector.copy())
+        return (closestPair(vector,dp)[0],vector[:])
     else:
         ip,iq=closestPair(vector,dp)[2]
 
@@ -79,4 +86,5 @@ if __name__ == '__main__':
             
     vector,k=readVector()
     vector.sort()
+    #pprint(vector)
     print(kDispersePoints(vector,k,dict()))
