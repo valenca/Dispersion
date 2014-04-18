@@ -44,7 +44,6 @@ def closestPair(L,dp):
 
         return L
 	
-	L.sort()
     try:
         return dp[tuple([tuple(i) for i in L])]
     except KeyError:
@@ -80,7 +79,7 @@ if __name__ == '__main__':
         for i in range(N):
             a=[]
             for j in range(D):
-                a.append(int(float(input())))
+                a.append(float(input()))
             vector.append(a)
         return vector,k
             
