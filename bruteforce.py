@@ -5,23 +5,23 @@ def dist(p1,p2):
 	return res**0.5
 
 def closestPair(L,dp):
-	try:
-		return dp[tuple([tuple(i) for i in L])]
-	except KeyError:
-		pass
-
 	best = [dist(L[0],L[1]),[L[0],L[1]],(0,1)]
 	for i in range(len(L)):
 		for j in range(i+1,len(L)):
 			if dist(L[i],L[j]) < best[0]:
 				best = [dist(L[i],L[j]),[L[i],L[j]],(i,j)]
-	dp[tuple([tuple(i) for i in L])]=best
 		
 	return best
 
 def kDispersePoints(vector,k,dp):
+	try:
+		return dp[tuple(vector)]
+	except KeyError:
+		pass
+
 	if k>=len(vector):
-		return (closestPair(vector,dp)[0],vector[:])
+		dp[tuple(vector)]=closestPair(vector,dp)[0],vector[:]
+		return dp[tuple(vector)]
 	else:
 		ip,iq=closestPair(vector,dp)[2]
 
@@ -34,8 +34,10 @@ def kDispersePoints(vector,k,dp):
 		vector.insert(iq,q)
 
 		if bq[0]>bp[0]:
+			dp[tuple(vector)] = bq;	
 			return bq
 		else :
+			dp[tuple(vector)] = bp;	
 			return bp
 
 if __name__ == '__main__':
@@ -48,7 +50,7 @@ if __name__ == '__main__':
 			a=[]
 			for j in range(D):
 				a.append(float(input()))
-			vector.append(a)
+			vector.append(tuple(a))
 		return vector,k
 			
 	vector,k=readVector()
