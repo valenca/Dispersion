@@ -54,7 +54,7 @@ def kDispersePoints(vector,k):
 	else:
 		ip,iq=closestPair(vector)[2]
 		
-		if vector[ip][0]==1:
+		if vector[i][0]==1:
 			vector[iq][0]=0
 			p=vector.pop(ip)
 			bp=kDispersePoints(vector,k)
@@ -73,7 +73,7 @@ def kDispersePoints(vector,k):
 			bq=[0,(-1,-1),(-1,-1)]
 
 
-		if bq[0]>bp[0]:
+		if bq[0]>=bp[0]:
 			return bq
 		else :
 			return bp
