@@ -52,16 +52,16 @@ def closestPair(L,dp):
 
 def kDispersePoints(vector,k,dp):
 	global C	
-	C+=1
 	try:	
 		return dp[tuple(vector)]
 	except KeyError:
 		pass
-
+	
 	if k>=len(vector):
 		dp[tuple(vector)]=closestPair(vector,dp)[0],vector[:]
 		return dp[tuple(vector)]
 	else:
+		C+=1
 		ip,iq=closestPair(vector,dp)[2]
 
 		p=vector.pop(ip)
