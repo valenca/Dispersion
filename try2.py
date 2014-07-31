@@ -2,7 +2,11 @@ from pprint import pprint
 from math import sqrt
 from sys import maxint
 from copy import deepcopy
+
+
+global D,C
 D=[0]
+C=[0,0,0]
 
 def dist(p1,p2):
 	res = 0
@@ -51,52 +55,42 @@ def closestPair(L):
 	recur(L,0)
 	return best
 
-def kDispersePoints(vector,k,l,s,D):
+def kDispersePoints(vector,k):
+	global D,C
+	C[0]+=1
 	if k>=len(vector):
-		d=closestPair(vector)[0],vector[:]
-		if d[0]>=D[0]:
-			D=deepcopy(d)
-		return d
+		return closestPair(vector)[0],vector[:]
 		
-	c=closestPair(vector)
-	
-	ip,iq=c[2]
-	p,q=c[1]
+	ip,iq=closestPair(vector)[2]
 
-	"""
-	print "Level:", l, s
-	pprint(vector)
-	print c
-	raw_input()
-	"""
-
-	#Case 3
-	if vector[ip][0] + vector[iq][0] == 2:
-		return [0]
-
-	#Case 1
-	elif vector[ip][0] == 1:
-		vector.pop(iq)
-		rgt=kDispersePoints(vector,k,l+1,"R",D)
-		vector.insert(iq,q)
-
-	#Case 2
-	elif vector[iq][0] == 1:
-		vector.pop(ip)
-		rgt=kDispersePoints(vector,k,l+1,"R",D)
+	if vector[ip][0]+vector[iq][0]==0:
+		p=vector.pop(ip)
+		rgt=kDispersePoints(vector,k)
 		vector.insert(ip,p)
 
-	#Case 0
-	else:
 		vector[ip][0]=1
-		vector.pop(iq)
-		rgt=kDispersePoints(vector,k,l+1,"R",D)
+		C[1]+=1
+		q=vector.pop(iq)
+		lft=kDispersePoints(vector,k)
 		vector.insert(iq,q)
 		vector[ip][0]=0
 
-	vector.pop(ip)
-	lft=kDispersePoints(vector,k,l+1,"L",D)
-	vector.insert(ip,p)
+	elif vector[ip][0]==1:
+		C[2]+=1
+		q=vector.pop(iq)
+		lft=kDispersePoints(vector,k)
+		vector.insert(iq,q)
+		rgt=[0]
+
+	elif vector[iq][0]==1:
+		C[2]+=1
+		p=vector.pop(ip)
+		rgt=kDispersePoints(vector,k)
+		vector.insert(ip,p)
+		lft=[0]
+
+	else :
+		return [0]
 
 	if lft[0]>rgt[0]:
 		return lft
@@ -104,7 +98,6 @@ def kDispersePoints(vector,k,l,s,D):
 		return rgt
 
 if __name__ == '__main__':
-	D=[0]
 	def readVector():
 		N=int(input())
 		D=int(input())
@@ -120,5 +113,5 @@ if __name__ == '__main__':
 		
 	vector,k=readVector()
 	vector.sort()
-	print(kDispersePoints(vector,k,0,"first",D))
-	#pprint(D)
+	D=kDispersePoints(vector,k)
+	print D,C

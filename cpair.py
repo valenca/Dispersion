@@ -1,5 +1,8 @@
 from pprint import pprint
 
+global C
+C=0
+
 def dist(p1,p2):
 	res = 0
 	for c1,c2 in zip(p1,p2):
@@ -48,7 +51,9 @@ def closestPair(L,dp):
 	return best
 
 def kDispersePoints(vector,k,dp):
-	try:
+	global C	
+	C+=1
+	try:	
 		return dp[tuple(vector)]
 	except KeyError:
 		pass
@@ -89,4 +94,4 @@ if __name__ == '__main__':
 	vector,k=readVector()
 	vector.sort()
 	#pprint(vector)
-	print(kDispersePoints(vector,k,dict()))
+	print kDispersePoints(vector,k,dict()), C
