@@ -53,7 +53,7 @@ def kDispersePoints(vector,marked,k):
 		
 	ip,iq=closestPair(vector)[2]
 
-	if vector[iq][0]+vector[ip][0]==2:
+	if marked[iq]>0 and marked[ip]>0:
 		return [0]
 	
 	lft=[0]
@@ -67,13 +67,13 @@ def kDispersePoints(vector,marked,k):
 		marked.insert(ip,m)
 
 	if marked[iq]==0:
-		marked[ip]=1
+		marked[ip]+=1
 		q=vector.pop(iq)
 		m=marked.pop(iq)
 		rgt=kDispersePoints(vector,marked,k)
 		vector.insert(iq,q)
 		marked.insert(iq,m)
-		marked[ip]=0
+		marked[ip]-=1
 
 	if lft[0]>rgt[0]:
 		return lft
