@@ -1,147 +1,170 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <values.h>
-#include <math.h>
-#include <string.h>
- 
-typedef struct { double x, y; } point_t, *point;
- 
-inline double dist(point a, point b)
-{
-  double dx = a->x-b->x,dy=a->y-b->y;
-  return dx*dx+dy*dy;
+#include<stdio.h>
+#include<stdlib.h>
+#include<math.h>
+#include"TBTLib/tbtlib.h"
+#include"TBTLib/tbtlib.c"
+
+#define MAX 3000 
+
+typedef struct TBTLInfo {
+  int mark;
+  double x;
+  double y;
+
+  double dist;
+  struct TBTLInfo *a;
+  struct TBTLInfo *b;
+
+  struct TBTLNode *node;
+} TBTLInfo;
+/* ================================ */
+
+/* ====== TBTLInfo initialization ====== */
+
+TBTLInfo *info_pool;
+int info_id;
+
+TBTLInfo *new_treeinfo() {
+  TBTLInfo *treeinfo = &info_pool[info_id];
+  info_id++;
+  treeinfo->mark=0;
+  treeinfo->dist=MAX;
+  treeinfo->a=NULL;
+  treeinfo->b=NULL;
+  return treeinfo;
 }
- 
-inline int cmp_dbl(double a, double b)
-{
-  return a<b?-1:a>b?1:0;
+/* ===================================== */
+
+int comp(TBTLInfo *p1, TBTLInfo *p2) {
+  if(p1->x < p2->x) return -1;
+  if(p1->x > p2->x) return 1;
+  if(p1->y < p2->y) return -1;
+  if(p1->y > p2->y) return 1;
+  return 0;
 }
- 
-int cmp_x(const void *a, const void *b) {
-  return cmp_dbl( (*(const point*)a)->x, (*(const point*)b)->x );
+
+double distance(TBTLInfo *a, TBTLInfo *b){
+  return sqrt((((a->x)-(b->x))*((a->x)-(b->x))) + (((a->y)-(b->y))*((a->y)-(b->y))));
 }
- 
-int cmp_y(const void *a, const void *b) {
-  return cmp_dbl( (*(const point*)a)->y, (*(const point*)b)->y );
-}
- 
-double brute_force(point* pts, int max_n, point *a, point *b)
-{
-  int i, j;
-  double d, min_d = MAXDOUBLE;
- 
-  for (i=0;i<max_n;i++) {
-    for (j=i+1;j<max_n;j++) {
-      d=dist(pts[i], pts[j]);
-      if (d>=min_d) continue;
-      *a = pts[i];
-      *b = pts[j];
-      min_d = d;
+
+int bruteForceK(TBTLNode *root, int k);
+int closestPair(TBTLNode *root);
+int printTree(TBTLNode *root,int l);
+
+
+
+int bruteForceK(TBTLNode *root, int k){
+  TBTLNode *it1,*it2;
+  int i,j;
+  double tmp;
+
+  root->info->dist=MAX;
+  it1=tbtl_get_leftmost_node(root)->minor;
+  
+  for(i=0;i<k-1;it1=it1->major,i++){
+    for(it2=it1->major,j=i+1;j<k-1;it2=it2->major,j++){
+      tmp=distance(it1->info,it2->info);
+      if(tmp<root->info->dist){
+	root->info->dist=tmp;
+	root->info->a=it1->info;
+	root->info->b=it2->info;
+      }
     }
   }
-  return min_d;
+  return 0;
 }
- 
-double closest(point* sx, int nx, point* sy, int ny, point *a, point *b)
-{
-  int left, right, i;
-  double d, min_d, x0, x1, mid, x;
-  point a1, b1;
-  point *s_yy;
- 
-  if (nx <= 8) 
-    return brute_force(sx, nx, a, b);
- 
-  s_yy  = malloc(sizeof(point) * ny);
-  mid = sx[nx/2]->x;
- 
-  left = -1; right = ny;
-  for (i = 0; i < ny; i++)
-    if (sy[i]->x < mid) s_yy[++left] = sy[i];
-    else                s_yy[--right]= sy[i];
- 
-  /* reverse the higher part of the list */
-  for (i = ny - 1; right < i; right ++, i--) {
-    a1 = s_yy[right]; 
-    s_yy[right] = s_yy[i]; 
-    s_yy[i] = a1;
+
+int closestPair(TBTLNode *root){
+  TBTLNode *it,*tar;
+  int i=1,k;
+  double tmp;
+
+  tar=tbtl_get_rightmost_node(root); 
+  for(it=tbtl_get_leftmost_node(root)->minor;it!=tar;it=it->major){
+    i++;
   }
- 
-  min_d = closest(sx, nx/2, s_yy, left + 1, a, b);
-  d=closest(sx+nx/2,nx-nx/2,s_yy+left+1,ny-left-1,&a1,&b1);
- 
-  if (d < min_d){
-    min_d = d;
-    *a = a1; 
-    *b = b1;
+
+  if(i==1)
+    return 0;
+  else if(i<=4)
+    bruteForceK(root,i);
+  else{
+    closestPair(root->left);
+    closestPair(root->right);
+
+    if(root->left->info->dist < root->right->info->dist){
+      root->info->dist=root->left->info->dist;
+      root->info->a=root->left->info->a;
+      root->info->b=root->left->info->b;
+    }
+    else{
+      root->info->dist=root->right->info->dist;
+      root->info->a=root->right->info->a;
+      root->info->b=root->right->info->b;
+    }
+    for(it=root->minor;it->minor!=it;it=it->minor){
+      k=0;
+      for(tar=root;k<8 && tar!=NULL;tar=tar->major,k++){
+	tmp=distance(it->info,tar->info);
+	if(tmp<root->info->dist){
+	  root->info->dist=tmp;
+	  root->info->a=it->info;
+	  root->info->b=tar->info;
+	}
+      }
+    }
+
+  }
+  return 0;
+}
+
+int printTree(TBTLNode *root,int l){
+  int i=0;
+  if(root->left)
+    printTree(root->left,l+1);
+  for(i=0;i<l;i++)
+    printf("  ");
+    printf("%.1f,%.1f --> %.1f\n",root->info->x,root->info->y,root->info->dist);
+  if(root->right)
+    printTree(root->right,l+1);
+  return 0;
+}
+
+int main(int argc, char *argv[]) {
+  int N,D,K,i;
+  TBTLNode *root = NULL, *temp;
+  TBTLInfo *tmp =NULL;
+
+  scanf("%d %d %d",&N,&D,&K);  
+  
+  info_pool = (TBTLInfo *)malloc( sizeof(TBTLInfo)*N);
+  
+
+  for(i = 0; i < N; i++) {
+    tmp=new_treeinfo();
+    scanf("%lf%lf",&tmp->x,&tmp->y);
+    temp = tbtl_insert('6', &root, tmp, (int(*)(const void*,const void*))comp);
+    if(!temp) {
+      i--;
+    }
   }
   
-  d = sqrt(min_d);
- 
-  /* get all the points within distance d of the center line */
-  left = -1; right = ny;
-  for (i = 0; i < ny; i++) {
-    x = sy[i]->x - mid;
-    if (x <= -d || x >= d) continue;
- 
-    if (x < 0) s_yy[++left]  = sy[i];
-    else       s_yy[--right] = sy[i];
-  }
- 
-  /* compare each left point to right point */
-  while (left >= 0) {
-    x0 = s_yy[left]->y + d;
- 
-    while (right < ny && s_yy[right]->y > x0) right ++;
-    if (right >= ny) break;
- 
-    x1 = s_yy[left]->y - d;
-    for (i = right; i < ny && s_yy[i]->y > x1; i++)
-      if ((x = dist(s_yy[left], s_yy[i])) < min_d) {
-	min_d = x;
-	d = sqrt(min_d);
-	*a = s_yy[left];
-	*b = s_yy[i];
-      }
- 
-    left --;
-  }
- 
-  free(s_yy);
-  return min_d;
-}
- 
+  temp=tbtl_get_leftmost_node(root);
+  temp->minor=temp;
+  
 
-
-
-#define NP 100
-
-int main()
-{
-  int i,N,D,K;
-  point a, b;
- 
-  point pts  = malloc(sizeof(point_t) * NP);
-  point* s_x = malloc(sizeof(point) * NP);
-  point* s_y = malloc(sizeof(point) * NP);
- 
-  scanf("%d %d %d",&N,&D,&K);
-
-  for(i=0;i<NP;i++){
-    scanf("%lf%lf",&pts[i].x,&pts[i].y);
-    s_x[i] = pts + i;
-  }
-   
-  memcpy(s_y, s_x, sizeof(point) * NP);
-  qsort(s_x, NP, sizeof(point), cmp_x);
-  qsort(s_y, NP, sizeof(point), cmp_y);
-
-  for(i=0;i<N;i++){
-    printf("%g--%g\n",s_x[i]->x,s_x[i]->y);
-  }
-   
-  printf("min: %g; ", sqrt(closest(s_x, NP, s_y, NP, &a, &b)));
-  printf("point (%f,%f) and (%f,%f)\n", a->x, a->y, b->x, b->y);
-   
+  /*bruteForceK(root,N);*/
+  
+  closestPair(root);
+  
+  /*printTree(root,0);*/
+  
+  printf("(%f,%f)<>(%f,%f) = %f = %f\n",
+	 root->info->a->x,
+	 root->info->a->y,
+	 root->info->b->x,
+	 root->info->b->y,
+	 root->info->dist,
+	 distance(root->info->a,root->info->b));
   return 0;
 }
