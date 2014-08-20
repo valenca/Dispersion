@@ -1,3 +1,5 @@
+from pprint import pprint
+
 def dist(p1,p2):
 	res = 0
 	for c1,c2 in zip(p1,p2):
@@ -47,4 +49,7 @@ if __name__ == '__main__':
 			
 	vector,k=readVector()
 	vector.sort()
-	print kDispersePoints(vector,k)[0]
+
+	final=kDispersePoints(vector,k)
+	print "%.5f" % final[0]
+	#pprint(final)
