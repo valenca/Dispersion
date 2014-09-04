@@ -212,11 +212,13 @@ int main(int argc, char *argv[]) {
   
   printf("%.5f\n",kDispersePoints(root,N,K));
   for(;root->up!=NULL;root=root->up);
-  
+  /*
   for(it=tbtl_get_leftmost_node(root);it!=NULL;it=it->major){
     if(it->info->rank==run){
-      //printf("%d:(%f,%f)\n",it->info->id,it->info->x,it->info->y);
+      printf("%d:(%f,%f)\n",it->info->id,it->info->x,it->info->y);
     }
   }
+  */
   return 0;
 }
+
