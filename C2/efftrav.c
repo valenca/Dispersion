@@ -2,37 +2,40 @@
 #include<stdlib.h>
 #include<math.h>
 
-#define MAX 10000 
 #define max(a,b) ((a)>(b))?(a):(b)
 #define min(a,b) ((a)<(b))?(a):(b)
 
+#define MAX 10000    /* Max Distance, should be larger than the distance between the furthest points */
+#define LEAF_SIZE 4  /* Number of Leafs for each Leafed Node*/
+#define DIM 2
+
 typedef struct Leaf {
   //coords
-  double x;
-  double y;
+  double x;          /* x coordinate of the point */
+  double y;          /* y coordinate of the point */
 
   //dispersion
-  int marked;
-  int rank;
+  int rank;          /* Indicates the rank of the latest kDisperse set that contains this point */
 
-  int off;
-  struct Node *node;
+  int marked;        /* Indicates if node is selected and fixed for the kDisperse set in progress */
+  int off;           /* Indicates if node is removed from consideration */
 
+  struct Node *node; /* Parent Node for the Leaf*/
 } Leaf;
 
 typedef struct Node{
-  struct Node *up;
-  struct Node *lft;
-  struct Node *rgt;
+  struct Node *up;   /* Parent Node */
+  struct Node *lft;  /* Left Child Node*/
+  struct Node *rgt;  /* Right Child Node*/
  
-  int c[3];
-  int min;
-  int max;
-  int level;
+  int c[LEAF_SIZE];  /* Children in case this node is a leafed node */
+  int min;           /* Minimum Index in the subtree */
+  int max;           /* Maximum Index in the subtree */
+  int level;         /* Depth Level for this node (0 means leafed node) */
 
-  int a;
-  int b;
-  double dist;
+  int a;             /* One of the points that make the closest pair in the subtree */
+  int b;             /* The other point that makes the closest pair in the subtree */
+  double dist;       /* Distance between a and b*/
 }Node;
 
 int comp(const void * a, const void * b){
@@ -44,10 +47,8 @@ int comp(const void * a, const void * b){
   if(p1->y > p2->y) return 1;
   return 0;
 }
-/* ===================================== */
 
 int N,D,K;
-
 Node * nodes;
 Leaf *leaves;
 
@@ -59,7 +60,7 @@ double max_disp;
 
 double distance(int a, int b){
   if (a==b) return MAX;
-  if (a==-1    || b==-1)    return MAX;
+  if (a==-1 || b==-1)    return MAX;
   if (leaves[a].off==1 || leaves[b].off==1) return MAX;
   return sqrt(
 	      (((leaves[a].x)-(leaves[b].x))*
@@ -75,14 +76,15 @@ int printTree(Node *root,int level){
     printTree(root->lft,level+1);
   for(i=0;i<level;i++)
     printf("  ");
-  printf("[%d-%d]: %f (%d,%d) \n",root->min,root->max,root->dist,root->a,root->b);
+  //printf("[%d-%d]: %f (%d,%d) \n",root->min,root->max,root->dist,root->a,root->b);
+  printf("[%d-%d]\n",root->min,root->max);
   /*
-  for(i=0;i<=level;i++) printf("  ");
-  printf("%d\n",root->c[0]);
-  for(i=0;i<=level;i++) printf("  ");
-  printf("%d\n",root->c[1]);
-  for(i=0;i<=level;i++) printf("  ");
-  printf("%d\n",root->c[2]);
+  int j;
+  for(i=0;i<LEAF_SIZE;i++){
+    for(j=0;j<level+1;j++)
+      printf("  ");
+    printf("[%d]\n",root->c[i]);
+  }
   */
   if(root->rgt)
     printTree(root->rgt,level+1);
@@ -91,6 +93,7 @@ int printTree(Node *root,int level){
 
 Node *genTree(Node *par, int l){
   Node *new;
+  int i;
 
   new=&nodes[--n_nodes];
 
@@ -109,17 +112,17 @@ Node *genTree(Node *par, int l){
       new->max=new->lft->max;
   }
   else{
-    new->min=new->c[0]=count++;
-    new->c[1]=count++;
-    new->c[2]=count++;
-    new->max=min(new->c[2],N-1);
+    for(i=0;i<LEAF_SIZE;i++){
+      if(count>=N) break;
+      new->c[i]=count++;
+      leaves[new->c[i]].node=new;
+    }
+
+    new->min=new->c[0];
+    new->max=count-1;
     
-    leaves[new->c[0]].node=new;
-    
-    if(new->c[1]<N) leaves[new->c[1]].node=new;
-    else new->c[1]=-1;
-    if(new->c[2]<N) leaves[new->c[2]].node=new;
-    else new->c[2]=-1;
+    for(;i<LEAF_SIZE;i++)
+      new->c[i]=-1;
   }    
   return new;    
 }
@@ -129,7 +132,7 @@ void insertLeaf(int index){
   for(it=leaves[index].node;it!=NULL;it=it->up){
     it->dist=MAX;
   }
-  leaves[index].node->c[index%3]=index;
+  leaves[index].node->c[index%LEAF_SIZE]=index;
   leaves[index].off=0;
   return;
 }
@@ -140,7 +143,7 @@ void removeLeaf(int index){
     if(it->a == index || it->b==index)
       it->dist=MAX;
   }
-  leaves[index].node->c[index%3]=-1;
+  leaves[index].node->c[index%LEAF_SIZE]=-1;
   leaves[index].off=1;
   return;
 }
@@ -153,8 +156,8 @@ double bruteForceK(Node * root){
 
   root->dist=MAX;
 
-  for(i=0;i<2;i++){
-    for(j=i;j<3;j++){
+  for(i=0;i<LEAF_SIZE-1;i++){
+    for(j=i;j<LEAF_SIZE;j++){
       tmp=distance(root->c[i],root->c[j]);
       if (tmp<root->dist){
 	root->dist=tmp;
@@ -239,7 +242,6 @@ double kDispersePoints(Node * root,int n, int K){
     if(leaves[p].marked==0){
       removeLeaf(p);
       lft=kDispersePoints(root,n-1,K);
-      if(root->up!=NULL) printf("HERE\n");
       insertLeaf(p);
     }
     if(leaves[q].marked==0){
@@ -260,15 +262,15 @@ int main(int argc, char *argv[]) {
   //read input head
   scanf("%d %d %d",&N,&D,&K);  
 
-  for(i=(N/3)+((N%3)?1:0);i!=1;i=(i/2)+(i%2)){l+=1;n_nodes+=i;}
+  for(i=(N/LEAF_SIZE)+((N%LEAF_SIZE)?1:0);i!=1;i=(i/2)+(i%2)){l+=1;n_nodes+=i;}
   n_nodes++;
-
 
   leaves = (Leaf *)malloc( sizeof(Leaf)*N);
   nodes  = (Node *)malloc( sizeof(Node)*n_nodes);  
 
   
   for(i=0;i<N;i++) scanf("%lf%lf",&leaves[i].x,&leaves[i].y);
+
   qsort(leaves, N, sizeof(Leaf), comp);
   
   root=genTree(NULL,l);
