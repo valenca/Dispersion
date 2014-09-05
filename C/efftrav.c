@@ -1,224 +1,285 @@
 #include<stdio.h>
 #include<stdlib.h>
 #include<math.h>
-#include"TBTLib/tbtlib.h"
-#include"TBTLib/tbtlib.c"
 
-#define MAX 3000 
-#define TREE_TYPE '7'
+#define MAX 10000 
+#define max(a,b) ((a)>(b))?(a):(b)
+#define min(a,b) ((a)<(b))?(a):(b)
 
-typedef struct TBTLInfo {
+typedef struct Leaf {
   //coords
   double x;
   double y;
 
-  //closest pair
-  double dist;
-  struct TBTLInfo *a;
-  struct TBTLInfo *b;
-
   //dispersion
   int marked;
   int rank;
-  int id;
 
-  struct TBTLNode *node;
-} TBTLInfo;
-/* ================================ */
+  int off;
+  struct Node *node;
 
-/* ====== TBTLInfo initialization ====== */
+} Leaf;
 
-TBTLInfo *info_pool;
-int info_id;
-double max;
-int run;
+typedef struct Node{
+  struct Node *up;
+  struct Node *lft;
+  struct Node *rgt;
+ 
+  int c[3];
+  int min;
+  int max;
+  int level;
 
-TBTLInfo *new_treeinfo() {
-  TBTLInfo *treeinfo = &info_pool[info_id];
-  info_id++;
-  treeinfo->marked=0;
-  treeinfo->dist=MAX;
-  treeinfo->rank=0;
-  treeinfo->a=NULL;
-  treeinfo->b=NULL;
-  return treeinfo;
-}
+  int a;
+  int b;
+  double dist;
+}Node;
 
-int comp(TBTLInfo *p1, TBTLInfo *p2) {
+int comp(const void * a, const void * b){
+  Leaf *p1=(Leaf*)a;
+  Leaf *p2=(Leaf*)b;
   if(p1->x < p2->x) return -1;
   if(p1->x > p2->x) return 1;
   if(p1->y < p2->y) return -1;
   if(p1->y > p2->y) return 1;
   return 0;
 }
-
 /* ===================================== */
 
-double distance(TBTLInfo *a, TBTLInfo *b){
-  return sqrt((((a->x)-(b->x))*((a->x)-(b->x))) + (((a->y)-(b->y))*((a->y)-(b->y))));
+int N,D,K;
+
+Node * nodes;
+Leaf *leaves;
+
+int count;
+int n_nodes;
+
+int run;
+double max_disp;
+
+double distance(int a, int b){
+  if (a==b) return MAX;
+  if (a==-1    || b==-1)    return MAX;
+  if (leaves[a].off==1 || leaves[b].off==1) return MAX;
+  return sqrt(
+	      (((leaves[a].x)-(leaves[b].x))*
+	       ((leaves[a].x)-(leaves[b].x)))+
+	      (((leaves[a].y)-(leaves[b].y))*
+	       ((leaves[a].y)-(leaves[b].y)))
+	      );
 }
 
-int printTree(TBTLNode *root,int l){
+int printTree(Node *root,int level){
   int i=0;
-  if(root->left)
-    printTree(root->left,l+1);
-  for(i=0;i<l;i++)
+  if(root->lft)
+    printTree(root->lft,level+1);
+  for(i=0;i<level;i++)
     printf("  ");
-  printf("%d(%.2f,%.1f) --> %.2f\n",root->info->rank,root->info->x,root->info->y,root->info->dist);
-  if(root->right)
-    printTree(root->right,l+1);
+  printf("[%d-%d]: %f (%d,%d) \n",root->min,root->max,root->dist,root->a,root->b);
+  /*
+  for(i=0;i<=level;i++) printf("  ");
+  printf("%d\n",root->c[0]);
+  for(i=0;i<=level;i++) printf("  ");
+  printf("%d\n",root->c[1]);
+  for(i=0;i<=level;i++) printf("  ");
+  printf("%d\n",root->c[2]);
+  */
+  if(root->rgt)
+    printTree(root->rgt,level+1);
   return 0;
 }
 
-double bruteForceK(TBTLNode *root, int k);
-double closestPair(TBTLNode *root,double dmin);
-double kDispersePoints(TBTLNode *root,int n,int K);
+Node *genTree(Node *par, int l){
+  Node *new;
 
-double bruteForceK(TBTLNode *root, int k){
-  TBTLNode *it1,*it2;
-  int i,j;
+  new=&nodes[--n_nodes];
+
+  new->up=par;
+  new->dist=MAX;
+  new->level=l;
+
+  if(l>0){
+    new->lft=genTree(new,l-1);
+    new->min=new->lft->min;
+    if(n_nodes){
+      new->rgt=genTree(new,l-1);
+      new->max=new->rgt->max;
+    }
+    else
+      new->max=new->lft->max;
+  }
+  else{
+    new->min=new->c[0]=count++;
+    new->c[1]=count++;
+    new->c[2]=count++;
+    new->max=min(new->c[2],N-1);
+    
+    leaves[new->c[0]].node=new;
+    
+    if(new->c[1]<N) leaves[new->c[1]].node=new;
+    else new->c[1]=-1;
+    if(new->c[2]<N) leaves[new->c[2]].node=new;
+    else new->c[2]=-1;
+  }    
+  return new;    
+}
+
+void insertLeaf(int index){
+  Node * it;
+  for(it=leaves[index].node;it!=NULL;it=it->up){
+    it->dist=MAX;
+  }
+  leaves[index].node->c[index%3]=index;
+  leaves[index].off=0;
+  return;
+}
+
+void removeLeaf(int index){
+  Node * it;
+  for(it=leaves[index].node;it!=NULL;it=it->up){
+    if(it->a == index || it->b==index)
+      it->dist=MAX;
+  }
+  leaves[index].node->c[index%3]=-1;
+  leaves[index].off=1;
+  return;
+}
+
+double bruteForceK(Node * root){
   double tmp;
+  int i,j;
+  if (root->dist!=MAX)
+    return root->dist;
 
-  root->info->dist=MAX;
-  it1=tbtl_get_leftmost_node(root);
-  if(it1->minor) it1=it1->minor;
-  
-  for(i=0;i<k-1;it1=it1->major,i++){
-    for(it2=it1->major,j=i+1;j<k;it2=it2->major,j++){
-      tmp=distance(it1->info,it2->info);
-      if(tmp<root->info->dist){
-	root->info->dist=tmp;
-	root->info->a=it1->info;
-	root->info->b=it2->info;
+  root->dist=MAX;
+
+  for(i=0;i<2;i++){
+    for(j=i;j<3;j++){
+      tmp=distance(root->c[i],root->c[j]);
+      if (tmp<root->dist){
+	root->dist=tmp;
+	root->a=root->c[i];
+	root->b=root->c[j];
       }
     }
   }
-  return root->info->dist;
+  return root->dist;
 }
 
-double closestPair(TBTLNode *root,double dmin){
-  TBTLNode *it1,*it2;
-  int i=1,k;
-  double tmp;
-  it1=tbtl_get_leftmost_node(root);
-  it2=tbtl_get_rightmost_node(root); 
-  
-  if(it1->minor) it1=it1->minor;
-  for(;it1!=it2;it1=it1->major){
-    i++;
-  }
+double closestPair(Node * root){
+  double ld,rd,md;
+  int i,j,k;
 
-  if(i<=5){
-    return bruteForceK(root,i);
-  }
+  if (!root) 
+    return MAX;
+  if (root->dist!=MAX)
+    return root->dist;
+  if(root->level==0)
+    return bruteForceK(root);
 
-  tmp=closestPair(root->right,dmin);
-  if(tmp<dmin){
-    dmin=root->info->dist=tmp;
-    root->info->a=root->right->info->a;root->info->b=root->right->info->b;
+  ld=closestPair(root->lft);
+  if(ld<root->dist){
+    root->dist=ld;
+    root->a=root->lft->a;
+    root->b=root->lft->b;
   }
   
-  tmp=closestPair(root->left,dmin);
-  if(tmp<dmin){
-    dmin=root->info->dist=tmp;
-    root->info->a=root->left->info->a;root->info->b=root->left->info->b;
+  if (root->rgt==NULL)
+    return root->dist;
+
+  rd=closestPair(root->rgt);
+  if(rd<root->dist){
+    root->dist=rd;
+    root->a=root->rgt->a;
+    root->b=root->rgt->b;
   }
   
-  for(it1=root->minor;it1!=NULL;it1=it1->minor){
+  md=MAX;
+
+  for(i=root->lft->max;i>=root->min;i--){
     k=0;
-    for(it2=root;it2!=NULL;it2=it2->major){
-      if(k==8 || it2->info->x-it1->info->x >= dmin) break;
-      if(abs(it2->info->y-it1->info->y) >= dmin) continue;
+    if (leaves[i].off==1) continue;
+    for(j=root->rgt->min;j<=root->max;j++){
+      if(k==8 || leaves[j].x-leaves[i].x >= root->dist) break;
+      if(abs(leaves[j].y-leaves[i].y) >= root->dist) continue;
       else{
 	k++;
-	tmp=distance(it1->info,it2->info);
-	if(tmp<dmin){
-	  dmin=root->info->dist=tmp;
-	  root->info->a=it1->info;root->info->b=it2->info;
+	md=distance(i,j);
+	if(md<root->dist){
+	  root->dist=md;
+	  root->a=i;root->b=j;
 	}
       }
     }
   }
-  return dmin;
+  return root->dist;
 }
 
-double kDispersePoints(TBTLNode *root,int n,int K){
-  TBTLNode *it;
-  TBTLInfo *p,*q;
+double kDispersePoints(Node * root,int n, int K){
+  int i,p,q;
   double rgt=0,lft=0;
-
-  if (K==n){
-    rgt=closestPair(root,MAX);
-    if(rgt>max){
-      max=rgt;
+  if(K==n){
+    rgt=closestPair(root);
+    if(rgt>max_disp){
+      max_disp=rgt;
       run++;
-      for(it=tbtl_get_leftmost_node(root);it!=NULL;it=it->major){
-	it->info->rank=run;
-      }
+      for(i=0;i<N;i++)
+	if(!(leaves[i].off))
+	  leaves[i].rank=run;
     }
     return rgt;
   }
   else{
-    closestPair(root,MAX);
-    p=root->info->a;
-    q=root->info->b;
-    
-    if(p->marked>0 && q->marked>0)
+    closestPair(root);
+    p=root->a;
+    q=root->b;
+    if(leaves[p].marked>0 && leaves[q].marked>0)
       return 0;
-    
-    if(p->marked==0){
-      tbtl_remove(TREE_TYPE,&root,p->node);	
+
+    if(leaves[p].marked==0){
+      removeLeaf(p);
       lft=kDispersePoints(root,n-1,K);
-      for(;root->up!=NULL;root=root->up);
-      tbtl_insert(TREE_TYPE,&root,p,(int(*)(const void*,const void*))comp);
+      if(root->up!=NULL) printf("HERE\n");
+      insertLeaf(p);
     }
-    
-    if(q->marked==0){
-      tbtl_remove(TREE_TYPE,&root,q->node);
-      p->marked++;
+    if(leaves[q].marked==0){
+      removeLeaf(q);
+      leaves[p].marked++;
       rgt=kDispersePoints(root,n-1,K);
-      for(;root->up!=NULL;root=root->up);
-      p->marked--;
-      tbtl_insert(TREE_TYPE,&root,q, (int(*)(const void*,const void*))comp);      
+      leaves[p].marked--;
+      insertLeaf(q);
     }
     
-    if(lft>rgt)
-      return lft;
-    else 
-      return rgt; 
+    return max(lft,rgt); 
   }
 }
 
 int main(int argc, char *argv[]) {
-  int N,D,K,i;
-  TBTLNode *root = NULL,*it;
-  TBTLInfo *tmp =NULL;
-
+  int i,l=0;
+  Node *root = NULL;
   //read input head
   scanf("%d %d %d",&N,&D,&K);  
 
-  info_pool = (TBTLInfo *)malloc( sizeof(TBTLInfo)*N);  
+  for(i=(N/3)+((N%3)?1:0);i!=1;i=(i/2)+(i%2)){l+=1;n_nodes+=i;}
+  n_nodes++;
 
-  for(i=0;i<N;i++){
-    tmp=new_treeinfo();
-    scanf("%lf%lf",&tmp->x,&tmp->y);
-    tmp->node = tbtl_insert(TREE_TYPE, &root, tmp, (int(*)(const void*,const void*))comp);
-    if(!tmp) i--;    
-  }
+
+  leaves = (Leaf *)malloc( sizeof(Leaf)*N);
+  nodes  = (Node *)malloc( sizeof(Node)*n_nodes);  
+
   
-  for(i=0,it=tbtl_get_leftmost_node(root);it!=NULL;it=it->major){
-    it->info->id=i++;
-  }
+  for(i=0;i<N;i++) scanf("%lf%lf",&leaves[i].x,&leaves[i].y);
+  qsort(leaves, N, sizeof(Leaf), comp);
   
+  root=genTree(NULL,l);
+    
   printf("%.5f\n",kDispersePoints(root,N,K));
-  for(;root->up!=NULL;root=root->up);
   /*
-  for(it=tbtl_get_leftmost_node(root);it!=NULL;it=it->major){
-    if(it->info->rank==run){
-      printf("%d:(%f,%f)\n",it->info->id,it->info->x,it->info->y);
+  for(i=0;i<N;i++){
+    if(leaves[i].rank==run){
+    //printf("%d:(%lf,%lf)\n",i,leaves[i].x,leaves[i].y);  
     }
   }
   */
   return 0;
 }
-
