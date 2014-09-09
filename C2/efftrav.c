@@ -7,13 +7,12 @@
 
 #define MAX 10000    /* Max Distance, should be larger than the distance between the furthest points */
 #define LEAF_SIZE 4  /* Number of Leafs for each Leafed Node*/
-#define DIM 2
 
 typedef struct Leaf {
   //coords
-  double x;          /* x coordinate of the point */
-  double y;          /* y coordinate of the point */
-
+  double x;
+  double y;
+  
   //dispersion
   int rank;          /* Indicates the rank of the latest kDisperse set that contains this point */
 
@@ -31,7 +30,7 @@ typedef struct Node{
   int c[LEAF_SIZE];  /* Children in case this node is a leafed node */
   int min;           /* Minimum Index in the subtree */
   int max;           /* Maximum Index in the subtree */
-  int level;         /* Depth Level for this node (0 means leafed node) */
+  int level;         /* Depth Level for this node (means leafed node) */
 
   int a;             /* One of the points that make the closest pair in the subtree */
   int b;             /* The other point that makes the closest pair in the subtree */
